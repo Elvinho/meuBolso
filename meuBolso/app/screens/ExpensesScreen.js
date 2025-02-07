@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, FlatList, Button, TextInput } from "react-native";
 
 const initialTransactions = [
@@ -14,14 +15,42 @@ export default function ExpensesScreen() {
   const [value, setValue] = useState("");
   const [date, setDate] = useState("");
 
+  useEffect(() => {
+    loadTransactions();
+  },[]);
+
+  const loadTransactions = async () => {
+    try {
+      const savedTransactions = await AsyncStorage.getItem("transactions");
+      if(savedTransactions){
+        setTransactions(JSON.parse(savedTransactions));
+      }
+    } catch (error){
+      console.error("Erro ao carregar transacoes:", error);
+    }
+  }
+
+  const savedTransactions = async (newTransactions) => {
+    try{
+      await AsyncStorage.setItem("transactions", JSON.stringify(newTransactions));
+    }catch (error){
+      console.error("Erro ao salvar transacoes:", error);
+    }
+  };
+
   const addTransaction = () => {
+    if (!category || !value || !date) return;
     const newTransaction = {
       id: String(transactions.length +1),
       category,
       value: parseFloat(value),
       date
     };
-    setTransactions([...transactions, newTransaction]);
+
+    const updatedTransaction = [...transactions, newTransaction];
+    setTransactions(updatedTransaction);
+    savedTransactions(updatedTransaction);
+  
     setCategory("");
     setValue("");
     setDate("");
